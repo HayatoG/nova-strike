@@ -4,13 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NOVA STRIKE — Operação Última Fronteira</title>
-  <link rel="stylesheet" href="style.css">
+  <script>
+    // cache-busting: cada visita carrega CSS/JS frescos
+    window.__V = Date.now();
+    document.write('<link rel="stylesheet" href="style.css?v=' + __V + '">');
+  </script>
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
 </head>
 <body>
   <div id="wrap">
     <canvas id="game" width="720" height="960"></canvas>
   </div>
-  <script src="js/audio.js"></script>
-  <script src="js/game.js"></script>
+  <script>
+    document.write('<script src="js/audio.js?v=' + __V + '"><\/script>');
+    document.write('<script src="js/game.js?v=' + __V + '"><\/script>');
+  </script>
 </body>
 </html>
