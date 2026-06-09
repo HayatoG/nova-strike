@@ -89,7 +89,35 @@ window.addEventListener('keydown', e => {
   AudioSys.unlock();
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
-canvas.addEventListener('pointerdown', () => AudioSys.unlock());
+
+// --- controles de toque (celular) ---
+const pointer = { active: false, x: 0, y: 0 };
+
+function canvasPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  AudioSys.unlock();
+  const p = canvasPos(e);
+  pointer.active = true; pointer.x = p.x; pointer.y = p.y;
+  if (state === ST.SHIP_SELECT) {
+    // terço esquerdo/direito navega, centro confirma
+    if (p.x < W / 3) { selIdx = (selIdx + SHIPS.length - 1) % SHIPS.length; AudioSys.play('click', 0.6); }
+    else if (p.x > W * 2 / 3) { selIdx = (selIdx + 1) % SHIPS.length; AudioSys.play('click', 0.6); }
+    else pressedOnce['Enter'] = true;
+  } else if (state !== ST.PLAYING) {
+    pressedOnce['Enter'] = true;   // qualquer toque avança telas
+  }
+});
+canvas.addEventListener('pointermove', e => {
+  if (!pointer.active) return;
+  const p = canvasPos(e);
+  pointer.x = p.x; pointer.y = p.y;
+});
+window.addEventListener('pointerup', () => { pointer.active = false; });
+window.addEventListener('pointercancel', () => { pointer.active = false; });
 
 const axis = () => ({
   x: (keys['ArrowLeft'] || keys['a'] || keys['A'] ? -1 : 0) + (keys['ArrowRight'] || keys['d'] || keys['D'] ? 1 : 0),
@@ -358,12 +386,24 @@ function updatePlayer(dt) {
   p.x = clamp(p.x + (a.x / len) * p.def.speed * dt, 36, W - 36);
   p.y = clamp(p.y + (a.y / len) * p.def.speed * dt, H * 0.35, H - 50);
 
+  // toque: a nave segue o dedo (com folga para não ficar embaixo dele)
+  if (pointer.active) {
+    const tx = clamp(pointer.x, 36, W - 36);
+    const ty = clamp(pointer.y - 110, H * 0.35, H - 50);
+    const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+    if (d > 4) {
+      const step = Math.min(p.def.speed * 1.2 * dt, d);
+      p.x += (dx / d) * step;
+      p.y += (dy / d) * step;
+    }
+  }
+
   p.invuln = Math.max(0, p.invuln - dt);
   p.rapid = Math.max(0, p.rapid - dt);
   p.engineAnim += dt * 18;
   p.fireCd -= dt;
 
-  if (firing() && p.fireCd <= 0) {
+  if ((firing() || pointer.active) && p.fireCd <= 0) {
     const rate = p.def.fireRate * (p.rapid > 0 ? 0.55 : 1);
     p.fireCd = rate;
     firePlayerWeapon();

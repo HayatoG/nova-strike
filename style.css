@@ -23,6 +23,7 @@ html, body {
 }
 
 #game {
+  touch-action: none;
   background: #0b0a18;
   box-shadow: 0 0 60px rgba(120, 80, 255, .25), 0 0 8px rgba(0,0,0,.8);
   max-width: 100vw;
